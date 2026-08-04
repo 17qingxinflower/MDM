@@ -3,18 +3,13 @@
 MuskDeerMonitor is a desktop application for automated Forest Musk Deer
 (*Moschus berezovskii*) behavior monitoring. This repository is the minimal
 runnable package prepared for GitHub and SoftwareX review: the GUI program, one
-trained YOLO model, and one small test video.
+trained YOLO model, and two test videos.
 
-This release is based on:
-
-```text
-检测与统计各版本备份/26-3-16-2 实时模式下的加速，跳播/main.py
-```
-
-It uses `customtkinter`, OpenCV, Ultralytics YOLO, SQLite, pandas, and
-matplotlib. Training scripts, experimental notebooks, intermediate datasets,
-generated outputs, and later UI-modernization branches are intentionally not
-included in this minimal repository.
+This release follows the March 16, 2026 realtime acceleration and seek-control
+snapshot selected by the maintainers. It uses `customtkinter`, OpenCV,
+Ultralytics YOLO, SQLite, pandas, and matplotlib. Training scripts, experimental
+notebooks, intermediate datasets, generated outputs, and later UI-modernization
+branches are intentionally not included in this minimal repository.
 
 ## SoftwareX Metadata
 
@@ -28,36 +23,38 @@ included in this minimal repository.
 | Main dependencies | customtkinter, OpenCV, Pillow, Ultralytics YOLO, pandas, openpyxl, matplotlib |
 | Main program | `main.py` |
 | Included model | `weight/Demo.pt` |
-| Included test video | `video/test_video.mp4` |
+| Included test videos | `video/ch01_20160707002310.mp4`, `video/ch01_20160708011933.mp4` |
 | Runtime outputs | `UI_result/`, `history.db` |
 
 ## Included Files
 
 ```text
-main.py                # Desktop GUI application
-weight/Demo.pt         # YOLO behavior detection model
-video/test_video.mp4   # Small test video for users and reviewers
-requirements.txt       # Python runtime dependencies
-LICENSE.md             # MIT license
-README.md              # User and reviewer documentation
+main.py                         # Desktop GUI application
+weight/Demo.pt                  # YOLO behavior detection model
+video/ch01_20160707002310.mp4   # Test video 1
+video/ch01_20160708011933.mp4   # Test video 2
+requirements.txt                # Python runtime dependencies
+LICENSE.md                      # MIT license
+README.md                       # User and reviewer documentation
 ```
 
 ## Behavior Classes
 
 The included model and code use seven Forest Musk Deer behavior labels:
 
-| Model label | Chinese display | English display |
-| --- | --- | --- |
-| `hunt` | 搜寻 | Foraging |
-| `egestion` | 排遗 | Excretion |
-| `Standing_feeding` | 站立取食 | Standing Feeding |
-| `Stand_or_walk` | 行走 | Walking |
-| `Lie_down_and_rest` | 卧息 | Resting |
-| `Licking_the_pussy` | 舔阴 | Anogenital Licking |
-| `Comb_and_lick` | 梳舔 | Grooming |
+| Model label | English display |
+| --- | --- |
+| `hunt` | Foraging |
+| `egestion` | Excretion |
+| `Standing_feeding` | Standing Feeding |
+| `Stand_or_walk` | Walking |
+| `Lie_down_and_rest` | Resting |
+| `Licking_the_pussy` | Anogenital Licking |
+| `Comb_and_lick` | Grooming |
 
 ## Features
 
+- English desktop GUI for reviewer-facing and user-facing operation.
 - Real-time single-camera or video-file behavior detection.
 - Video progress control with seeking and playback-speed adjustment.
 - Frame-queue based processing for smoother real-time operation.
@@ -100,7 +97,7 @@ python -m pip install -r requirements.txt
 
 If your GPU, driver, or CUDA version is different, install the PyTorch command
 recommended by the official PyTorch selector instead of the CUDA 12.8 example
-above. CPU-only PyTorch can also run the demo video, but inference will be
+above. CPU-only PyTorch can also run the test videos, but inference will be
 slower.
 
 ## Run
@@ -111,15 +108,16 @@ python main.py
 
 In the GUI:
 
-1. Click `1. 载入 AI 权重模型` and select `weight/Demo.pt`.
-2. Click `2. 选择主监控流接入`.
-3. Choose `Yes` for local video and select `video/test_video.mp4`, or choose `No`
-   to use camera index `0`.
-4. Click `开始单路实时检测`.
-5. Use the progress and speed controls for seeking and accelerated playback.
-6. Use `专家过滤规则调整` to tune abnormal-behavior review thresholds.
+1. Click `Load AI Model` and select `weight/Demo.pt`.
+2. Click `Connect Video Source`.
+3. Select a deer ID, then choose `Yes` for local video.
+4. Select either `video/ch01_20160707002310.mp4` or
+   `video/ch01_20160708011933.mp4`.
+5. Click `Start Detection`.
+6. Use the progress and speed controls for seeking and accelerated playback.
+7. Use `Behavior Alert Settings` to tune abnormal-behavior review thresholds.
 
-For offline processing, click `历史录像离线批处理` and select a video file.
+For offline processing, click `Video Batch` and select a video file.
 
 ## Outputs
 
@@ -143,7 +141,8 @@ python -m py_compile main.py
 ```
 
 The program is GUI-based, so full functional validation requires launching
-`python main.py`, loading `weight/Demo.pt`, and selecting `video/test_video.mp4`.
+`python main.py`, loading `weight/Demo.pt`, and selecting one of the included
+test videos.
 
 ## Citation
 

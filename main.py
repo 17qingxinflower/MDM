@@ -19,12 +19,12 @@ from datetime import timedelta
 import base64
 import re
 
-# 全局配置 & Matplotlib 中文支持
+# Global configuration and Matplotlib font settings
 plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS']
 plt.rcParams['axes.unicode_minus'] = False
 matplotlib.use('Agg')
 
-# --- 极暗生态配色板 ---
+# --- Dark ecology color palette ---
 COLOR_BG_MAIN = "#0A0F0D"      
 COLOR_BG_SIDEBAR = "#0D1411"   
 COLOR_PANEL = "#111814"        
@@ -37,7 +37,7 @@ COLOR_TEXT_SUB = "#6B7280"
 
 ctk.set_appearance_mode("dark")
 
-# 全局数据库并发锁
+# Global database concurrency lock
 db_lock = threading.Lock()
 
 TRANSPARENT_ICON = b'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='
@@ -74,10 +74,10 @@ ACTION_THRESHOLD = 0.45
 
 temperature = "18.5"
 humidity = "62"
-health_info = "良好"
+health_info = "Normal"
 deer_id = "2.1.6" 
 
-# === 1. 数据库初始化 ===
+# === 1. Database initialization ===
 def init_db():
     with db_lock:
         conn = sqlite3.connect('history.db')
@@ -114,16 +114,16 @@ def init_db():
 init_db()
 
 class_mapping = {0: "hunt", 1: "egestion", 2: "Standing_feeding", 3: "Stand_or_walk", 4: "Lie_down_and_rest", 5: "Licking_the_pussy", 6: "Comb_and_lick"}
-display_class_mapping = {"hunt": "搜寻", "egestion": "排遗", "Standing_feeding": "站立取食", "Stand_or_walk": "行走", "Lie_down_and_rest": "卧息", "Licking_the_pussy": "舔阴", "Comb_and_lick": "梳舔"}
+display_class_mapping = {"hunt": "Foraging", "egestion": "Excretion", "Standing_feeding": "Standing Feeding", "Stand_or_walk": "Walking", "Lie_down_and_rest": "Resting", "Licking_the_pussy": "Anogenital Licking", "Comb_and_lick": "Grooming"}
 english_display_mapping = {"hunt": "Foraging", "egestion": "Excretion", "Standing_feeding": "Standing Feeding", "Stand_or_walk": "Walking", "Lie_down_and_rest": "Resting", "Licking_the_pussy": "Anogenital Licking", "Comb_and_lick": "Grooming"}
 
-# === 2. 核心视频分析引擎 ===
+# === 2. Core video analysis engine ===
 class VideoProcessor:
     def __init__(self, root, video_id="default", is_multi_video=False):
         self.root = root
         self.video_id = video_id
         self.is_multi_video = is_multi_video
-        self.deer_id = "未绑定"
+        self.deer_id = "Unassigned"
         
         self.model = None
         self.cap = None
@@ -179,7 +179,7 @@ class VideoProcessor:
         self.video_source = source
         if self.cap is not None: self.cap.release()
         self.cap = cv2.VideoCapture(source)
-        if not self.cap.isOpened(): raise IOError("无法连接到监控流。")
+        if not self.cap.isOpened(): raise IOError("Unable to connect to the monitoring stream.")
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
         self.original_size = (int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
@@ -193,7 +193,7 @@ class VideoProcessor:
         return True
 
     def get_current_time(self):
-        """【时序核心】: 视频流使用虚拟时间，物理倍速不影响它的时间尺度"""
+        """Timing core: video files use virtual timestamps, so playback speed does not alter the behavior time scale."""
         if self.is_video_file and self.cap:
             msec = self.cap.get(cv2.CAP_PROP_POS_MSEC)
             return msec / 1000.0 if msec >= 0 else 0.0
@@ -208,7 +208,7 @@ class VideoProcessor:
                 self.model.eval()
                 return True
             except Exception as e:
-                messagebox.showerror("引擎加载失败", f"无法读取模型:\n{str(e)}")
+                messagebox.showerror("Engine Load Failed", f"Unable to load model:\n{str(e)}")
                 self.model = None
                 return False
         return False
@@ -220,13 +220,13 @@ class VideoProcessor:
         if self.current_action and self.action_start_time is not None:
             current_duration = self.get_current_time() - self.action_start_time
             if current_duration >= 0.1:
-                display_action = display_class_mapping.get(self.current_action, "未知")
+                display_action = display_class_mapping.get(self.current_action, "Unknown")
                 action_durations_total[display_action] = action_durations_total.get(display_action, 0) + current_duration
         
         if not action_durations_total:
             for card_dict in self.stat_cards: card_dict["card"].pack_forget()
             if not hasattr(self, "empty_stats_label"):
-                self.empty_stats_label = ctk.CTkLabel(self.stats_container, text="暂无行为数据", text_color=COLOR_TEXT_SUB)
+                self.empty_stats_label = ctk.CTkLabel(self.stats_container, text="No behavior data yet", text_color=COLOR_TEXT_SUB)
                 self.empty_stats_label.pack(pady=30)
             else: self.empty_stats_label.pack(pady=30)
             return
@@ -242,7 +242,7 @@ class VideoProcessor:
             card.pack(fill="x", pady=4, padx=2)
             left_info = ctk.CTkFrame(card, fg_color="transparent")
             left_info.pack(side="left", padx=12, pady=8)
-            ctk.CTkLabel(left_info, text="记录", font=ctk.CTkFont(size=10), text_color=COLOR_TEXT_SUB).pack(anchor="w", pady=(0, 2))
+            ctk.CTkLabel(left_info, text="Record", font=ctk.CTkFont(size=10), text_color=COLOR_TEXT_SUB).pack(anchor="w", pady=(0, 2))
             lbl_act = ctk.CTkLabel(left_info, text="", font=ctk.CTkFont(size=14, weight="bold"), text_color=COLOR_TEXT_MAIN)
             lbl_act.pack(anchor="w")
             
@@ -258,7 +258,7 @@ class VideoProcessor:
             percentage = (duration / total_duration) * 100 if total_duration > 0 else 0
             self.stat_cards[i]["lbl_act"].configure(text=action)
             self.stat_cards[i]["lbl_dur"].configure(text=f"{duration:.1f} s")
-            self.stat_cards[i]["lbl_pct"].configure(text=f"占比: {percentage:.1f}%")
+            self.stat_cards[i]["lbl_pct"].configure(text=f"Share: {percentage:.1f}%")
             self.stat_cards[i]["card"].pack(fill="x", pady=4, padx=2)
             
         for i in range(len(sorted_items), len(self.stat_cards)):
@@ -272,11 +272,11 @@ class VideoProcessor:
                     "action": self.current_action, "start_time": self.action_start_time,
                     "end_time": end_time, "duration": dur
                 })
-                prev_disp = display_class_mapping.get(self.current_action, "未知")
+                prev_disp = display_class_mapping.get(self.current_action, "Unknown")
                 self.action_durations_total[prev_disp] = self.action_durations_total.get(prev_disp, 0) + dur
                 self.action_frequency_total[prev_disp] = self.action_frequency_total.get(prev_disp, 0) + 1
                 
-                # 【防污染拦截】：录像回放状态下，实时过程不写任何底层数据库黑匣子
+                # Data guard: replay mode does not write live stream records to the database
                 if not self.is_video_file:
                     with db_lock:
                         try:
@@ -415,7 +415,7 @@ class VideoProcessor:
             box = max(self.last_results[0].boxes, key=lambda b: b.conf[0].item())
             cls, conf = int(box.cls[0]), box.conf[0].item()
             if conf >= ACTION_THRESHOLD:
-                detected_action = self.class_mapping.get(cls, "未知")
+                detected_action = self.class_mapping.get(cls, "Unknown")
                 eng_action = english_display_mapping.get(detected_action, "Unknown")
                 x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
                 cv2.rectangle(frame_out, (x1, y1), (x2, y2), (16, 185, 129), 2)
@@ -433,7 +433,7 @@ class VideoProcessor:
                     self._close_current_action(self.pending_start_time) 
                     self.current_action = detected_action
                     self.action_start_time = self.pending_start_time 
-                    self.current_display_action = display_class_mapping.get(detected_action, "未知") if detected_action else None
+                    self.current_display_action = display_class_mapping.get(detected_action, "Unknown") if detected_action else None
                     self.pending_action = None
                     self.pending_start_time = None
 
@@ -461,17 +461,17 @@ class VideoProcessor:
                         if self.current_display_action: 
                             self.action_label.configure(text=f"● {self.current_display_action}", text_color=COLOR_PRIMARY)
                         else: 
-                            self.action_label.configure(text="● 等待中", text_color=COLOR_TEXT_SUB)
+                            self.action_label.configure(text="Waiting", text_color=COLOR_TEXT_SUB)
                     self.update_action_stats()
         except Empty: pass
         if self.is_detecting and self.video_label: self.video_label.after(int(1000 / DISPLAY_FPS), self.update_display)
     
     def toggle_detection(self):
         if not self.is_detecting:
-            if not model_path: return messagebox.showerror("提示", "请先载入 AI 识别大脑！")
+            if not model_path: return messagebox.showerror("Notice", "Please load the AI model first.")
             if not self.load_model(): return
-            if self.cap is None or not self.cap.isOpened(): return messagebox.showerror("提示", "画面信号未接入，请检查视频源。")
-            if self.deer_id == "未绑定": return messagebox.showerror("提示", "该分析线程尚未绑定林麝身份，请重新接入！")
+            if self.cap is None or not self.cap.isOpened(): return messagebox.showerror("Notice", "No video source is connected. Please check the source.")
+            if self.deer_id == "Unassigned": return messagebox.showerror("Notice", "This analysis stream is not assigned to a deer ID. Please connect the source again.")
             
             self.is_detecting = True
             self.session_start_time = time.time()
@@ -480,7 +480,7 @@ class VideoProcessor:
             self.has_skipped = False
             self.playback_speed = 1.0
             
-            # 【完美兼容多屏控制】：根据单/多线程模式动态加载进度条组件
+            # Load progress controls according to single-view or multi-view mode
             if self.is_video_file and self.control_panel:
                 if self.is_multi_video:
                     self.control_panel.pack(fill="x", pady=5, after=self.start_stop_button)
@@ -509,7 +509,7 @@ class VideoProcessor:
             
             if self.fps_label: self.fps_label.grid(row=0, column=1, sticky="ne", padx=15, pady=15)
             if self.is_multi_video and self.start_stop_button:
-                self.start_stop_button.configure(text="⏹ 停止分析", fg_color=COLOR_DANGER, hover_color="#B91C1C")
+                self.start_stop_button.configure(text="Stop Analysis", fg_color=COLOR_DANGER, hover_color="#B91C1C")
             
             threading.Thread(target=self.video_capture_thread_func, daemon=True).start()
             threading.Thread(target=self.processing_thread_func, daemon=True).start()
@@ -522,7 +522,7 @@ class VideoProcessor:
             self.pending_action = None
             self.pending_start_time = None
             
-            if self.action_label: self.action_label.configure(text="● 等待中", text_color=COLOR_TEXT_SUB)
+            if self.action_label: self.action_label.configure(text="Waiting", text_color=COLOR_TEXT_SUB)
             if self.cap: self.cap.release(); self.cap = None
             self.frame_queue.queue.clear(); self.display_queue.queue.clear()
             
@@ -534,7 +534,7 @@ class VideoProcessor:
                 self.root.show_placeholder_fn()
             if self.fps_label: self.fps_label.grid_forget()
             if self.is_multi_video and self.start_stop_button:
-                self.start_stop_button.configure(text="▶ 智能分析", fg_color=COLOR_PRIMARY, hover_color=COLOR_PRIMARY_HOVER)
+                self.start_stop_button.configure(text="Start Analysis", fg_color=COLOR_PRIMARY, hover_color=COLOR_PRIMARY_HOVER)
             
             threading.Thread(target=self.save_all_data, daemon=True).start()
 
@@ -558,10 +558,10 @@ class VideoProcessor:
         if not self.action_durations: return
         
         if self.has_skipped:
-            print(f"[拦截机制] {self.video_id} 线程检测到进度跳跃，本次录像复盘停止落地记录。")
+            print(f"[Skip guard] {self.video_id}  thread detected a progress seek; this replay will not be saved.")
             def post_skip_ui():
                 if not self.is_multi_video:
-                    messagebox.showinfo("沙盒模式触发", "本次播放包含进度跳跃，仅提供右侧面板实时展示，\n数据不会被计入历史分析库与全天汇总表。")
+                    messagebox.showinfo("Sandbox Mode Triggered", "This playback included a seek action and will only be shown in the live panel.\nThe data will not be saved to history or daily summaries.")
             self.root.after(0, post_skip_ui)
             return
 
@@ -569,30 +569,30 @@ class VideoProcessor:
         os.makedirs(today_dir, exist_ok=True)
         ts = time.strftime("%H%M%S", time.localtime(self.session_start_time)) if self.session_start_time else time.strftime("%H%M%S")
         
-        suffix = f"_{self.video_id}" if self.is_multi_video or self.video_id != "主控区" else ""
+        suffix = f"_{self.video_id}" if self.is_multi_video or self.video_id != "Main Console" else ""
         task_id = f"#JOB-{ts}{suffix}"
         
         data = []
         for a in self.action_durations:
             st = str(timedelta(seconds=int(a["start_time"]))) if a["start_time"] < 86400 else time.strftime("%H:%M:%S", time.localtime(a["start_time"]))
             et = str(timedelta(seconds=int(a["end_time"]))) if a["end_time"] < 86400 else time.strftime("%H:%M:%S", time.localtime(a["end_time"]))
-            data.append({"动物行为": display_class_mapping.get(a["action"], a["action"]), "开始时间": st, "结束时间": et, "时长(秒)": round(a["duration"], 2)})
-        raw_path = os.path.join(today_dir, f"{task_id}_行为记录流水.xlsx")
+            data.append({"Behavior": display_class_mapping.get(a["action"], a["action"]), "Start Time": st, "End Time": et, "Duration (s)": round(a["duration"], 2)})
+        raw_path = os.path.join(today_dir, f"{task_id}_behavior_stream.xlsx")
         pd.DataFrame(data).to_excel(raw_path, index=False)
         
         filtered = self.analyze_and_filter_results(self.min_duration_threshold_val, self.max_transition_rate_val)
         alert_path = ""
         if filtered:
-            alert_path = os.path.join(today_dir, f"{task_id}_行为标记单.xlsx")
+            alert_path = os.path.join(today_dir, f"{task_id}_behavior_alerts.xlsx")
             ad = []
             for seg in filtered:
                 st = str(timedelta(seconds=int(seg["start_time"]))) if seg["start_time"]<86400 else time.strftime("%H:%M:%S", time.localtime(seg["start_time"]))
                 et = str(timedelta(seconds=int(seg["end_time"]))) if seg["end_time"]<86400 else time.strftime("%H:%M:%S", time.localtime(seg["end_time"]))
-                if seg["type"] == "long_duration": ad.append({"异常方向": "动作停滞过长", "行为": seg["display_action"], "起止时段": f"{st} - {et}", "处理建议": "排查生病/刻板"})
-                else: ad.append({"异常方向": "动作高频切换", "行为": "多种动作极速变更", "起止时段": f"{st} - {et}", "处理建议": f"频率{seg['transition_rate']:.1f}次/分，排查发情求偶"})
+                if seg["type"] == "long_duration": ad.append({"Alert Type": "Long behavior duration", "Behavior": seg["display_action"], "Time Range": f"{st} - {et}", "Recommended Action": "Check for illness or stereotyped behavior"})
+                else: ad.append({"Alert Type": "Frequent behavior switching", "Behavior": "Rapid mixed-behavior changes", "Time Range": f"{st} - {et}", "Recommended Action": f"Rate {seg['transition_rate']:.1f}/min; check estrus or courtship behavior"})
             pd.DataFrame(ad).to_excel(alert_path, index=False)
 
-        real_start = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(self.session_start_time)) if self.session_start_time and self.session_start_time > 86400 else f"{time.strftime('%Y-%m-%d')} 录像重放"
+        real_start = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(self.session_start_time)) if self.session_start_time and self.session_start_time > 86400 else f"{time.strftime('%Y-%m-%d')} Replay"
         real_end = time.strftime("%Y-%m-%d %H:%M:%S")
         
         with db_lock:
@@ -605,7 +605,7 @@ class VideoProcessor:
             if self.action_durations_total:
                 total_valid_seconds = sum(self.action_durations_total.values())
                 if total_valid_seconds >= 1800:
-                    task_date = real_start.split(" ")[0] if "录像重放" not in real_start else time.strftime('%Y-%m-%d')
+                    task_date = real_start.split(" ")[0] if "Replay" not in real_start else time.strftime('%Y-%m-%d')
                     for act_name, duration in self.action_durations_total.items():
                         freq = self.action_frequency_total.get(act_name, 1)
                         c.execute("SELECT total_duration, frequency FROM daily_summary WHERE date=? AND deer_id=? AND action_name=?", (task_date, self.deer_id, act_name))
@@ -621,7 +621,7 @@ class VideoProcessor:
                     total_day_dur = c.fetchone()[0] or 1
                     c.execute("UPDATE daily_summary SET percentage = round((total_duration / ?) * 100, 2) WHERE date=? AND deer_id=?", (total_day_dur, task_date, self.deer_id))
                 else:
-                    print(f"[数据拦截] 任务 {task_id} 仅运行 {total_valid_seconds:.1f} 秒，已自动从基线记忆库中剔除。")
+                    print(f"[Data guard] Task {task_id} ran for only {total_valid_seconds:.1f} s and was excluded from the baseline summary.")
             
             conn.commit()
             conn.close()
@@ -633,13 +633,13 @@ class VideoProcessor:
             if hasattr(self.root, "refresh_history_fn"): self.root.refresh_history_fn()
             if not self.is_multi_video:
                 if hasattr(self.root, "view_charts_fn"): self.root.view_charts_fn(raw_path, task_id)
-                if filtered: messagebox.showwarning("⚠️ 林麝预警系统", f"系统捕获到 {len(filtered)} 处异常迹象！\n已出具行为标记单，请及时核查！")
+                if filtered: messagebox.showwarning("Musk Deer Alert System", f"The system detected {len(filtered)} alert segment(s).\nAn alert sheet has been generated for review.")
 
         self.root.after(0, post_analysis_ui)
 
     def show_threshold_settings(self):
         win = ctk.CTkToplevel(self.root)
-        win.title("预警配置")
+        win.title("Alert Settings")
         win.geometry("500x600")
         win.configure(fg_color=COLOR_BG_MAIN)
         set_window_icon(win)
@@ -652,19 +652,19 @@ class VideoProcessor:
         if not hasattr(self, 'action_duration_thresholds'):
             self.action_duration_thresholds = {display_class_mapping.get(v, v): tk.DoubleVar(value=self.action_thresholds.get(display_class_mapping.get(v, v), 5.0)) for v in self.class_mapping.values()}
             
-        ctk.CTkLabel(win, text="异常预警阈值设定", font=ctk.CTkFont(size=20, weight="bold"), text_color=COLOR_TEXT_MAIN).pack(anchor="w", padx=25, pady=(25,10))
+        ctk.CTkLabel(win, text="Alert Threshold Settings", font=ctk.CTkFont(size=20, weight="bold"), text_color=COLOR_TEXT_MAIN).pack(anchor="w", padx=25, pady=(25,10))
         gf = ctk.CTkFrame(win, fg_color=COLOR_PANEL, corner_radius=8)
         gf.pack(fill="x", padx=25, pady=10)
         
         f1 = ctk.CTkFrame(gf, fg_color="transparent"); f1.pack(fill="x", padx=20, pady=15)
-        ctk.CTkLabel(f1, text="动作持续超长报警 (秒)", text_color=COLOR_TEXT_SUB, font=ctk.CTkFont(size=13)).pack(side="left")
+        ctk.CTkLabel(f1, text="Long-duration alert (s)", text_color=COLOR_TEXT_SUB, font=ctk.CTkFont(size=13)).pack(side="left")
         ctk.CTkEntry(f1, textvariable=self.min_dur, width=70, border_color=COLOR_BORDER, fg_color=COLOR_BG_MAIN).pack(side="right")
         
         f2 = ctk.CTkFrame(gf, fg_color="transparent"); f2.pack(fill="x", padx=20, pady=(0, 15))
-        ctk.CTkLabel(f2, text="极速切换报警 (次/分)", text_color=COLOR_TEXT_SUB, font=ctk.CTkFont(size=13)).pack(side="left")
+        ctk.CTkLabel(f2, text="Rapid-switch alert (events/min)", text_color=COLOR_TEXT_SUB, font=ctk.CTkFont(size=13)).pack(side="left")
         ctk.CTkEntry(f2, textvariable=self.max_trans, width=70, border_color=COLOR_BORDER, fg_color=COLOR_BG_MAIN).pack(side="right")
 
-        ctk.CTkLabel(win, text="特定动作单独限时 (秒)", font=ctk.CTkFont(weight="bold", size=14), text_color=COLOR_TEXT_MAIN).pack(anchor="w", padx=25, pady=(15,5))
+        ctk.CTkLabel(win, text="Per-behavior duration limits (s)", font=ctk.CTkFont(weight="bold", size=14), text_color=COLOR_TEXT_MAIN).pack(anchor="w", padx=25, pady=(15,5))
         sf = ctk.CTkScrollableFrame(win, fg_color=COLOR_PANEL, corner_radius=8)
         sf.pack(fill="both", expand=True, padx=25, pady=5)
         
@@ -677,21 +677,21 @@ class VideoProcessor:
             try:
                 self.min_duration_threshold_val, self.max_transition_rate_val = self.min_dur.get(), self.max_trans.get()
                 self.action_thresholds = {k: v.get() for k, v in self.action_duration_thresholds.items()}
-                win.destroy(); messagebox.showinfo("成功", "红线已生效。")
-            except: messagebox.showerror("错误", "请填写数字。")
+                win.destroy(); messagebox.showinfo("Success", "Thresholds have been applied.")
+            except: messagebox.showerror("Error", "Please enter numeric values.")
             
         bf = ctk.CTkFrame(win, fg_color="transparent")
         bf.pack(fill="x", padx=25, pady=20)
-        ctk.CTkButton(bf, text="保存配置", command=save, fg_color=COLOR_PRIMARY, text_color="white", font=ctk.CTkFont(weight="bold", size=14), height=40).pack(side="left", expand=True, padx=5)
-        ctk.CTkButton(bf, text="取消", command=win.destroy, fg_color="transparent", border_width=1, border_color=COLOR_TEXT_SUB, text_color=COLOR_TEXT_SUB, height=40).pack(side="right", expand=True, padx=5)
+        ctk.CTkButton(bf, text="Save Settings", command=save, fg_color=COLOR_PRIMARY, text_color="white", font=ctk.CTkFont(weight="bold", size=14), height=40).pack(side="left", expand=True, padx=5)
+        ctk.CTkButton(bf, text="Cancel", command=win.destroy, fg_color="transparent", border_width=1, border_color=COLOR_TEXT_SUB, text_color=COLOR_TEXT_SUB, height=40).pack(side="right", expand=True, padx=5)
 
-# === 3. 特殊路由模式：多路分屏身份绑定 ===
+# === 3. Special mode: multi-view identity assignment ===
 def start_multi_video_analysis():
     global root, multi_processor_instances
-    num = simpledialog.askinteger("多栏位矩阵", "需要建立几个监控分屏？(例如输入4)", parent=root, minvalue=1, maxvalue=8)
+    num = simpledialog.askinteger("Multi-View Matrix", "How many monitoring panes should be created? (for example, 4)", parent=root, minvalue=1, maxvalue=8)
     if not num: return
     gw = ctk.CTkToplevel(root)
-    gw.title("生态数智监控矩阵")
+    gw.title("Eco-Intelligent Monitoring Matrix")
     gw.geometry("1450x900")
     gw.configure(fg_color=COLOR_BG_MAIN)
     set_window_icon(gw)
@@ -702,12 +702,12 @@ def start_multi_video_analysis():
     for j in range(cols): gw.grid_columnconfigure(j, weight=1, uniform="cg")
     
     for idx in range(num):
-        r, c = divmod(idx, cols); cid = f"机位_{idx+1}"
+        r, c = divmod(idx, cols); cid = f"Camera_{idx+1}"
         cf = ctk.CTkFrame(gw, corner_radius=15, fg_color=COLOR_PANEL, border_color=COLOR_BORDER, border_width=1)
         cf.grid(row=r, column=c, sticky="nsew", padx=10, pady=10)
         cf.grid_columnconfigure(0, weight=7, uniform="cin"); cf.grid_columnconfigure(1, weight=3, uniform="cin"); cf.grid_rowconfigure(0, weight=1)
         
-        vl = ctk.CTkLabel(cf, text=f"{cid} 待机中", bg_color="black", text_color=COLOR_TEXT_SUB, font=ctk.CTkFont(size=15))
+        vl = ctk.CTkLabel(cf, text=f"{cid} Standby", bg_color="black", text_color=COLOR_TEXT_SUB, font=ctk.CTkFont(size=15))
         vl.grid(row=0, column=0, sticky="nsew", padx=(10,0), pady=10)
         
         sf = ctk.CTkFrame(cf, fg_color="transparent")
@@ -716,9 +716,9 @@ def start_multi_video_analysis():
         p = VideoProcessor(gw, video_id=cid, is_multi_video=True)
         multi_processor_instances[cid] = p; p.video_label = vl
         
-        ctk.CTkLabel(sf, text=f"{cid} 控制", font=ctk.CTkFont(weight="bold", size=15), text_color="white").pack(pady=(5,5))
+        ctk.CTkLabel(sf, text=f"{cid} Controls", font=ctk.CTkFont(weight="bold", size=15), text_color="white").pack(pady=(5,5))
         
-        bind_lbl = ctk.CTkLabel(sf, text="未绑定林麝", font=ctk.CTkFont(size=12, weight="bold"), text_color=COLOR_TEXT_SUB)
+        bind_lbl = ctk.CTkLabel(sf, text="No deer assigned", font=ctk.CTkFont(size=12, weight="bold"), text_color=COLOR_TEXT_SUB)
         bind_lbl.pack(pady=(0, 10))
         
         def load_v(vp=p, d_lbl=bind_lbl):
@@ -730,18 +730,18 @@ def start_multi_video_analysis():
                 conn.close()
 
             if not deer_ids:
-                messagebox.showwarning("无档案", "当前没有任何林麝档案！\n请先在左侧【林麝档案登记】模块中为林麝上牌。")
+                messagebox.showwarning("No Profiles", "No deer profiles are available.\nPlease create a deer profile from the Deer Profiles module in the sidebar.")
                 return
 
             bind_win = ctk.CTkToplevel(gw)
-            bind_win.title("分屏身份绑定")
+            bind_win.title("Pane Identity Assignment")
             bind_win.geometry("350x250")
             bind_win.configure(fg_color=COLOR_BG_MAIN)
             set_window_icon(bind_win)
             force_focus(bind_win)
             bind_win.transient(gw); bind_win.grab_set()
 
-            ctk.CTkLabel(bind_win, text=f"请选择 {vp.video_id} 的目标个体", font=ctk.CTkFont(size=16, weight="bold"), text_color=COLOR_TEXT_MAIN).pack(pady=(25, 15))
+            ctk.CTkLabel(bind_win, text=f"Please select {vp.video_id}'s target deer ID", font=ctk.CTkFont(size=16, weight="bold"), text_color=COLOR_TEXT_MAIN).pack(pady=(25, 15))
             
             id_var = tk.StringVar(value=deer_ids[0])
             combo = ctk.CTkComboBox(bind_win, variable=id_var, values=deer_ids, state="readonly", fg_color=COLOR_PANEL, border_color=COLOR_BORDER)
@@ -750,29 +750,29 @@ def start_multi_video_analysis():
             def confirm_binding():
                 selected_id = id_var.get()
                 vp.deer_id = selected_id
-                d_lbl.configure(text=f"🦌 已绑定: {selected_id}", text_color=COLOR_PRIMARY)
+                d_lbl.configure(text=f"Assigned: {selected_id}", text_color=COLOR_PRIMARY)
                 bind_win.destroy()
                 
-                ans = messagebox.askquestion("信号源", f"已锁定个体 {selected_id}。\n载入本地历史视频？(选否将直接挂载实时摄像头)")
-                fp = filedialog.askopenfilename(filetypes=[("视频", "*.mp4 *.avi *.mkv")]) if ans == 'yes' else 0
+                ans = messagebox.askquestion("Video Source", f"Assigned deer ID {selected_id}.\nLoad a local video file? Choose No to use the live camera.")
+                fp = filedialog.askopenfilename(filetypes=[("Video", "*.mp4 *.avi *.mkv")]) if ans == 'yes' else 0
                 if fp or ans == 'no':
                     vp.init_camera(fp)
 
-            ctk.CTkButton(bind_win, text="确认并接入", command=confirm_binding, fg_color=COLOR_PRIMARY, hover_color=COLOR_PRIMARY_HOVER).pack(pady=20)
+            ctk.CTkButton(bind_win, text="Confirm and Connect", command=confirm_binding, fg_color=COLOR_PRIMARY, hover_color=COLOR_PRIMARY_HOVER).pack(pady=20)
             
-        ctk.CTkButton(sf, text="挂载监控源", command=load_v, height=35, fg_color="#1E2923", border_color=COLOR_BORDER, border_width=1).pack(fill="x", pady=5)
+        ctk.CTkButton(sf, text="Connect Source", command=load_v, height=35, fg_color="#1E2923", border_color=COLOR_BORDER, border_width=1).pack(fill="x", pady=5)
         
-        btn = ctk.CTkButton(sf, text="▶ 智能分析", fg_color=COLOR_PRIMARY, text_color="white", font=ctk.CTkFont(weight="bold"), command=p.toggle_detection, height=35)
+        btn = ctk.CTkButton(sf, text="Start Analysis", fg_color=COLOR_PRIMARY, text_color="white", font=ctk.CTkFont(weight="bold"), command=p.toggle_detection, height=35)
         btn.pack(fill="x", pady=5)
         p.start_stop_button = btn 
         
-        # --- 多线程专属进度条与倍速控件 ---
+        # --- Multi-thread progress and speed controls ---
         cp = ctk.CTkFrame(sf, fg_color="transparent")
         
         pvar = tk.DoubleVar(value=0)
         pslider = ctk.CTkSlider(cp, variable=pvar, progress_color=COLOR_PRIMARY, button_color="white", height=14)
         pslider.pack(side="left", fill="x", expand=True, padx=(0, 5))
-        # UI层面事件绑定，防止互相堆叠
+        # UI event bindings
         pslider.bind("<Button-1>", p._on_slider_drag_start)
         pslider.bind("<ButtonRelease-1>", p._on_slider_release)
         
@@ -786,23 +786,23 @@ def start_multi_video_analysis():
         p.speed_var = svar
         # ----------------------------------
 
-        al = ctk.CTkLabel(sf, text="● 等待中", font=ctk.CTkFont(size=18, weight="bold"), text_color=COLOR_TEXT_SUB)
+        al = ctk.CTkLabel(sf, text="Waiting", font=ctk.CTkFont(size=18, weight="bold"), text_color=COLOR_TEXT_SUB)
         al.pack(pady=(10,5)); p.action_label = al
         
-        ctk.CTkLabel(sf, text="实时行为大纲", font=ctk.CTkFont(size=12, weight="bold"), text_color=COLOR_TEXT_SUB).pack(anchor="w", pady=(5,0))
+        ctk.CTkLabel(sf, text="Live Behavior Summary", font=ctk.CTkFont(size=12, weight="bold"), text_color=COLOR_TEXT_SUB).pack(anchor="w", pady=(5,0))
         slf = ctk.CTkScrollableFrame(sf, fg_color="transparent")
         slf.pack(fill="both", expand=True)
         p.stats_container = slf
         
     gw.protocol("WM_DELETE_WINDOW", lambda: [p.toggle_detection() for p in multi_processor_instances.values() if p.is_detecting] or multi_processor_instances.clear() or gw.destroy())
 
-# === 4. 特殊路由模式：批处理身份绑定 ===
+# === 4. Special mode: batch identity assignment ===
 def quick_video_analysis():
     global VIDEO_FILE_PATH, model_path, root
-    if not (path := filedialog.askopenfilename(title="请指定批处理的历史录像", filetypes=[("Video", "*.mp4 *.avi *.mkv")])): return
+    if not (path := filedialog.askopenfilename(title="Select a video for batch analysis", filetypes=[("Video", "*.mp4 *.avi *.mkv")])): return
     VIDEO_FILE_PATH = path
     if not model_path:
-        if not (model_path := filedialog.askopenfilename(title="请加载模型", filetypes=[("YOLO Model", "*.pt")])): return
+        if not (model_path := filedialog.askopenfilename(title="Load YOLO model", filetypes=[("YOLO Model", "*.pt")])): return
 
     with db_lock:
         conn = sqlite3.connect('history.db')
@@ -812,18 +812,18 @@ def quick_video_analysis():
         conn.close()
 
     if not deer_ids:
-        messagebox.showwarning("无档案", "当前没有任何林麝档案！\n请先在左侧【林麝档案登记】模块中为林麝上牌。")
+        messagebox.showwarning("No Profiles", "No deer profiles are available.\nPlease create a deer profile from the Deer Profiles module in the sidebar.")
         return
 
     bind_win = ctk.CTkToplevel(root)
-    bind_win.title("批处理身份绑定")
+    bind_win.title("Batch Identity Assignment")
     bind_win.geometry("350x250")
     bind_win.configure(fg_color=COLOR_BG_MAIN)
     set_window_icon(bind_win)
     force_focus(bind_win)
     bind_win.transient(root); bind_win.grab_set()
 
-    ctk.CTkLabel(bind_win, text="请选择该视频归属的林麝个体", font=ctk.CTkFont(size=16, weight="bold"), text_color=COLOR_TEXT_MAIN).pack(pady=(25, 15))
+    ctk.CTkLabel(bind_win, text="Select the deer ID for this video", font=ctk.CTkFont(size=16, weight="bold"), text_color=COLOR_TEXT_MAIN).pack(pady=(25, 15))
     
     id_var = tk.StringVar(value=deer_ids[0])
     combo = ctk.CTkComboBox(bind_win, variable=id_var, values=deer_ids, state="readonly", fg_color=COLOR_PANEL, border_color=COLOR_BORDER)
@@ -832,14 +832,14 @@ def quick_video_analysis():
     def confirm_binding():
         selected_id = id_var.get()
         bind_win.destroy()
-        messagebox.showinfo("启动", f"已锁定个体 {selected_id}！\n系统已分配算力开始批处理，完成后将自动存入【历史分析库】。")
+        messagebox.showinfo("Started", f"Assigned deer ID {selected_id}.\nBatch analysis has started. Results will be saved to the History Library.")
         threading.Thread(target=perform_quick_analysis_with_filtering, args=(selected_id,), daemon=True).start()
 
-    ctk.CTkButton(bind_win, text="确认并开始处理", command=confirm_binding, fg_color=COLOR_PRIMARY, hover_color=COLOR_PRIMARY_HOVER).pack(pady=20)
+    ctk.CTkButton(bind_win, text="Confirm and Start", command=confirm_binding, fg_color=COLOR_PRIMARY, hover_color=COLOR_PRIMARY_HOVER).pack(pady=20)
 
 def perform_quick_analysis_with_filtering(target_deer_id):
     global VIDEO_FILE_PATH, model_path, root, processor
-    tp = VideoProcessor(root, video_id="离线处理")
+    tp = VideoProcessor(root, video_id="Offline Batch")
     tp.deer_id = target_deer_id  
     
     tp.session_start_time = time.time()
@@ -852,14 +852,14 @@ def perform_quick_analysis_with_filtering(target_deer_id):
     tf, fps = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)), cap.get(cv2.CAP_PROP_FPS) or 30
     
     pw = ctk.CTkToplevel()
-    pw.title("极速批处理")
+    pw.title("Fast Batch Analysis")
     pw.geometry("450x180"); pw.configure(fg_color=COLOR_BG_MAIN)
     set_window_icon(pw)
     force_focus(pw) 
 
-    ctk.CTkLabel(pw, text="正在浓缩分析监控精华...", font=ctk.CTkFont(weight="bold", size=16), text_color=COLOR_PRIMARY).pack(pady=(25,15))
+    ctk.CTkLabel(pw, text="Analyzing the monitoring video...", font=ctk.CTkFont(weight="bold", size=16), text_color=COLOR_PRIMARY).pack(pady=(25,15))
     pvar = tk.DoubleVar(); ctk.CTkProgressBar(pw, variable=pvar, width=350, progress_color=COLOR_PRIMARY).pack()
-    il = ctk.CTkLabel(pw, text="准备切片...", text_color=COLOR_TEXT_SUB)
+    il = ctk.CTkLabel(pw, text="Preparing frames...", text_color=COLOR_TEXT_SUB)
     il.pack(pady=15)
     
     st, fi = 0.0, 0
@@ -868,7 +868,7 @@ def perform_quick_analysis_with_filtering(target_deer_id):
         if not ret: break
         fi += 1
         if fi % max(1, int(tf / 100)) == 0:
-            pvar.set(fi / tf); il.configure(text=f"进度: 第 {fi} / {tf} 帧"); pw.update()
+            pvar.set(fi / tf); il.configure(text=f"Progress: frame {fi} / {tf}"); pw.update()
         ct = fi / fps
         if fi % 5 == 0:
             res = tp.model(frame, verbose=False)
@@ -876,7 +876,7 @@ def perform_quick_analysis_with_filtering(target_deer_id):
             if res[0].boxes:
                 box = max(res[0].boxes, key=lambda b: b.conf[0].item())
                 if box.conf[0].item() >= ACTION_THRESHOLD:
-                    detected_act = tp.class_mapping.get(int(box.cls[0]), "未知")
+                    detected_act = tp.class_mapping.get(int(box.cls[0]), "Unknown")
             
             if detected_act == tp.current_action:
                 tp.pending_action = None
@@ -897,11 +897,11 @@ def perform_quick_analysis_with_filtering(target_deer_id):
     cap.release(); pw.destroy()
     tp.save_all_data()
 
-# === 5. GUI 组装 ===
+# === 5. GUI assembly ===
 def create_gui():
     global root, processor, deer_id
     root = ctk.CTk()
-    root.title("MuskDeer Monitor | 数智养殖·生态管家")
+    root.title("MuskDeer Monitor | Intelligent Behavior Monitoring")
     root.geometry("1400x900")
     root.minsize(1200, 780)
     root.configure(fg_color=COLOR_BG_MAIN)
@@ -918,7 +918,7 @@ def create_gui():
     sidebar.grid_rowconfigure(8, weight=1)
     
     ctk.CTkLabel(sidebar, text="MuskDeer\nMonitor", font=ctk.CTkFont(family="Arial Black", size=26, weight="bold"), text_color=COLOR_PRIMARY, justify="left").pack(anchor="w", padx=25, pady=(40, 5))
-    ctk.CTkLabel(sidebar, text="数智养殖 · 生态管家", font=ctk.CTkFont(size=12), text_color=COLOR_TEXT_SUB).pack(anchor="w", padx=25, pady=(0,35))
+    ctk.CTkLabel(sidebar, text="Intelligent Husbandry Assistant", font=ctk.CTkFont(size=12), text_color=COLOR_TEXT_SUB).pack(anchor="w", padx=25, pady=(0,35))
     
     def switch_tab(tab_name):
         history_view.grid_forget()
@@ -933,36 +933,36 @@ def create_gui():
             history_view.grid(row=0, column=0, sticky="nsew")
             nav_history.configure(fg_color=COLOR_PANEL, text_color=COLOR_PRIMARY, font=ctk.CTkFont(size=14, weight="bold"))
             search_id_var.set("")
-            search_status_var.set("异常状态 (全部)")
+            search_status_var.set("Alert status (all)")
             load_history_data()
 
     nav_frame = ctk.CTkFrame(sidebar, fg_color="transparent")
     nav_frame.pack(fill="x", padx=15, pady=5)
     
-    nav_realtime = ctk.CTkButton(nav_frame, text=" 👁  实时监控台", command=lambda: switch_tab("realtime"), anchor="w", fg_color=COLOR_PANEL, text_color=COLOR_PRIMARY, font=ctk.CTkFont(size=14, weight="bold"), height=45)
+    nav_realtime = ctk.CTkButton(nav_frame, text=" 👁  Realtime Monitor", command=lambda: switch_tab("realtime"), anchor="w", fg_color=COLOR_PANEL, text_color=COLOR_PRIMARY, font=ctk.CTkFont(size=14, weight="bold"), height=45)
     nav_realtime.pack(fill="x", pady=2)
-    ctk.CTkButton(nav_frame, text=" 🎛  多栏位矩阵", command=start_multi_video_analysis, anchor="w", fg_color="transparent", text_color=COLOR_TEXT_SUB, font=ctk.CTkFont(size=14), hover_color=COLOR_PANEL, height=45).pack(fill="x", pady=2)
-    ctk.CTkButton(nav_frame, text=" ⚡  视频批处理", command=quick_video_analysis, anchor="w", fg_color="transparent", text_color=COLOR_TEXT_SUB, font=ctk.CTkFont(size=14), hover_color=COLOR_PANEL, height=45).pack(fill="x", pady=2)
-    nav_history = ctk.CTkButton(nav_frame, text=" 📊  历史分析库", command=lambda: switch_tab("history"), anchor="w", fg_color="transparent", text_color=COLOR_TEXT_SUB, font=ctk.CTkFont(size=14), hover_color=COLOR_PANEL, height=45)
+    ctk.CTkButton(nav_frame, text=" 🎛  Multi-View Matrix", command=start_multi_video_analysis, anchor="w", fg_color="transparent", text_color=COLOR_TEXT_SUB, font=ctk.CTkFont(size=14), hover_color=COLOR_PANEL, height=45).pack(fill="x", pady=2)
+    ctk.CTkButton(nav_frame, text=" ⚡  Video Batch", command=quick_video_analysis, anchor="w", fg_color="transparent", text_color=COLOR_TEXT_SUB, font=ctk.CTkFont(size=14), hover_color=COLOR_PANEL, height=45).pack(fill="x", pady=2)
+    nav_history = ctk.CTkButton(nav_frame, text=" 📊  History Library", command=lambda: switch_tab("history"), anchor="w", fg_color="transparent", text_color=COLOR_TEXT_SUB, font=ctk.CTkFont(size=14), hover_color=COLOR_PANEL, height=45)
     nav_history.pack(fill="x", pady=2)
 
-    # ================= 林麝档案登记模块 =================
+    # ================= Deer profile management module =================
     def manage_deer_profiles():
         win = ctk.CTkToplevel(root)
-        win.title("林麝档案登记与管理")
+        win.title("Deer Profile Management")
         win.geometry("400x500")
         win.configure(fg_color=COLOR_BG_MAIN)
         set_window_icon(win)
         force_focus(win)
         win.transient(root); win.grab_set()
 
-        ctk.CTkLabel(win, text="林麝个体档案上牌", font=ctk.CTkFont(size=20, weight="bold"), text_color=COLOR_TEXT_MAIN).pack(pady=(20, 10))
+        ctk.CTkLabel(win, text="Register Deer Profile", font=ctk.CTkFont(size=20, weight="bold"), text_color=COLOR_TEXT_MAIN).pack(pady=(20, 10))
 
         add_frame = ctk.CTkFrame(win, fg_color="transparent")
         add_frame.pack(fill="x", padx=20, pady=10)
         
         new_id_var = tk.StringVar()
-        entry = ctk.CTkEntry(add_frame, textvariable=new_id_var, placeholder_text="输入编号 (如: 2.1.6)", width=200, height=35, fg_color=COLOR_PANEL, border_color=COLOR_BORDER)
+        entry = ctk.CTkEntry(add_frame, textvariable=new_id_var, placeholder_text="Enter ID (e.g., 2.1.6)", width=200, height=35, fg_color=COLOR_PANEL, border_color=COLOR_BORDER)
         entry.pack(side="left", padx=(0, 10))
 
         def add_id():
@@ -970,7 +970,7 @@ def create_gui():
             if not new_id: return
             
             if not re.match(r"^\d+\.\d+\.\d+$", new_id):
-                messagebox.showerror("格式规范", "所有个体的编号必须是标准格式（如：2.1.6）！\n请检查后重新输入。")
+                messagebox.showerror("Invalid ID Format", "Deer IDs must use the standard format, such as 2.1.6.\nPlease check and try again.")
                 return
                 
             with db_lock:
@@ -980,20 +980,20 @@ def create_gui():
                     c.execute("INSERT INTO deer_info (deer_id, added_date) VALUES (?, date('now'))", (new_id,))
                     conn.commit()
                     new_id_var.set("")
-                    messagebox.showinfo("上牌成功", f"林麝个体 {new_id} 的专属档案已建立！")
+                    messagebox.showinfo("Profile Created", f"Deer ID {new_id} has been created.")
                 except sqlite3.IntegrityError:
-                    messagebox.showerror("重复登记", "该个体编号已存在于档案库中！")
+                    messagebox.showerror("Duplicate Profile", "This deer ID already exists in the profile library.")
                 finally:
                     conn.close()
             refresh_list()
 
-        ctk.CTkButton(add_frame, text="登记上牌", command=add_id, width=80, height=35, fg_color=COLOR_PRIMARY, hover_color=COLOR_PRIMARY_HOVER).pack(side="left")
+        ctk.CTkButton(add_frame, text="Register", command=add_id, width=80, height=35, fg_color=COLOR_PRIMARY, hover_color=COLOR_PRIMARY_HOVER).pack(side="left")
 
         list_frame = ctk.CTkScrollableFrame(win, fg_color=COLOR_PANEL, corner_radius=8)
         list_frame.pack(fill="both", expand=True, padx=20, pady=10)
 
         def delete_id(did):
-            if messagebox.askyesno("注销确认", f"确定要注销林麝 {did} 的档案吗？\n注：已生成的历史流水账不会被删除。"):
+            if messagebox.askyesno("Delete Profile?", f"Delete deer profile {did}?\nExisting history records will not be deleted."):
                 with db_lock:
                     conn = sqlite3.connect('history.db')
                     c = conn.cursor()
@@ -1015,21 +1015,21 @@ def create_gui():
                 row_f = ctk.CTkFrame(list_frame, fg_color="transparent")
                 row_f.pack(fill="x", pady=5)
                 ctk.CTkLabel(row_f, text=f"🦌 {did}", font=ctk.CTkFont(size=14, weight="bold"), text_color=COLOR_TEXT_MAIN).pack(side="left", padx=10)
-                ctk.CTkButton(row_f, text="注销", width=50, fg_color="transparent", border_width=1, border_color=COLOR_DANGER, text_color=COLOR_DANGER, command=lambda d=did: delete_id(d)).pack(side="right", padx=10)
+                ctk.CTkButton(row_f, text="Delete", width=50, fg_color="transparent", border_width=1, border_color=COLOR_DANGER, text_color=COLOR_DANGER, command=lambda d=did: delete_id(d)).pack(side="right", padx=10)
 
         refresh_list()
 
-    nav_profile = ctk.CTkButton(nav_frame, text=" 🦌  林麝档案登记", command=manage_deer_profiles, anchor="w", fg_color="transparent", text_color=COLOR_TEXT_SUB, font=ctk.CTkFont(size=14), hover_color=COLOR_PANEL, height=45)
+    nav_profile = ctk.CTkButton(nav_frame, text=" 🦌  Deer Profiles", command=manage_deer_profiles, anchor="w", fg_color="transparent", text_color=COLOR_TEXT_SUB, font=ctk.CTkFont(size=14), hover_color=COLOR_PANEL, height=45)
     nav_profile.pack(fill="x", pady=2)
     # ========================================================
 
     ctk.CTkFrame(sidebar, height=1, fg_color=COLOR_BORDER).pack(fill="x", padx=25, pady=30)
     
-    ctk.CTkLabel(sidebar, text="AI 控制器", font=ctk.CTkFont(size=12, weight="bold"), text_color=COLOR_TEXT_SUB, anchor="w").pack(fill="x", padx=25, pady=(0, 10))
+    ctk.CTkLabel(sidebar, text="AI Controller", font=ctk.CTkFont(size=12, weight="bold"), text_color=COLOR_TEXT_SUB, anchor="w").pack(fill="x", padx=25, pady=(0, 10))
     
     def load_m():
         global model_path
-        if model_path := filedialog.askopenfilename(filetypes=[("AI 权重", "*.pt")]): messagebox.showinfo("成功", f"大脑已接入")
+        if model_path := filedialog.askopenfilename(filetypes=[("AI Weights", "*.pt")]): messagebox.showinfo("Success", f"Model loaded.")
         
     def load_s():
         with db_lock:
@@ -1040,18 +1040,18 @@ def create_gui():
             conn.close()
 
         if not deer_ids:
-            messagebox.showwarning("无档案", "当前没有任何林麝档案！\n请先在左侧【林麝档案登记】模块中为林麝上牌。")
+            messagebox.showwarning("No Profiles", "No deer profiles are available.\nPlease create a deer profile from the Deer Profiles module in the sidebar.")
             return
 
         bind_win = ctk.CTkToplevel(root)
-        bind_win.title("主控区身份绑定")
+        bind_win.title("Main Console Identity Assignment")
         bind_win.geometry("350x250")
         bind_win.configure(fg_color=COLOR_BG_MAIN)
         set_window_icon(bind_win)
         force_focus(bind_win)
         bind_win.transient(root); bind_win.grab_set()
 
-        ctk.CTkLabel(bind_win, text="请选择目标林麝个体", font=ctk.CTkFont(size=16, weight="bold"), text_color=COLOR_TEXT_MAIN).pack(pady=(25, 15))
+        ctk.CTkLabel(bind_win, text="Select target deer ID", font=ctk.CTkFont(size=16, weight="bold"), text_color=COLOR_TEXT_MAIN).pack(pady=(25, 15))
         
         id_var = tk.StringVar(value=deer_ids[0])
         combo = ctk.CTkComboBox(bind_win, variable=id_var, values=deer_ids, state="readonly", fg_color=COLOR_PANEL, border_color=COLOR_BORDER)
@@ -1065,33 +1065,33 @@ def create_gui():
             
             bind_win.destroy()
             
-            ans = messagebox.askquestion("信号源", f"已锁定个体 {deer_id}。\n载入本地历史视频？(选否将直接挂载实时摄像头)")
-            fp = filedialog.askopenfilename(filetypes=[("视频", "*.mp4 *.avi *.mkv")]) if ans == 'yes' else 0
+            ans = messagebox.askquestion("Video Source", f"Assigned deer ID {deer_id}.\nLoad a local video file? Choose No to use the live camera.")
+            fp = filedialog.askopenfilename(filetypes=[("Video", "*.mp4 *.avi *.mkv")]) if ans == 'yes' else 0
             if fp or ans == 'no':
                 processor.init_camera(fp)
 
-        ctk.CTkButton(bind_win, text="确认并接入监控", command=confirm_binding, fg_color=COLOR_PRIMARY, hover_color=COLOR_PRIMARY_HOVER).pack(pady=20)
+        ctk.CTkButton(bind_win, text="Confirm and Connect Monitor", command=confirm_binding, fg_color=COLOR_PRIMARY, hover_color=COLOR_PRIMARY_HOVER).pack(pady=20)
 
     btn_style = {"fg_color": "transparent", "border_width": 1, "border_color": COLOR_BORDER, "text_color": COLOR_TEXT_MAIN, "hover_color": COLOR_PANEL, "height": 40}
-    ctk.CTkButton(sidebar, text="载入 AI 识别大脑    >", command=load_m, font=ctk.CTkFont(size=13), **btn_style).pack(fill="x", padx=25, pady=6)
-    ctk.CTkButton(sidebar, text="接入画面流          >", command=load_s, font=ctk.CTkFont(size=13), **btn_style).pack(fill="x", padx=25, pady=6)
-    ctk.CTkButton(sidebar, text="异常行为预警配置", command=lambda: processor.show_threshold_settings(), font=ctk.CTkFont(size=13), **btn_style).pack(fill="x", padx=25, pady=6)
+    ctk.CTkButton(sidebar, text="Load AI Model          >", command=load_m, font=ctk.CTkFont(size=13), **btn_style).pack(fill="x", padx=25, pady=6)
+    ctk.CTkButton(sidebar, text="Connect Video Source   >", command=load_s, font=ctk.CTkFont(size=13), **btn_style).pack(fill="x", padx=25, pady=6)
+    ctk.CTkButton(sidebar, text="Behavior Alert Settings", command=lambda: processor.show_threshold_settings(), font=ctk.CTkFont(size=13), **btn_style).pack(fill="x", padx=25, pady=6)
     
     bottom_frame = ctk.CTkFrame(sidebar, fg_color="transparent")
     bottom_frame.pack(side="bottom", fill="x", padx=25, pady=30)
     
-    start_btn = ctk.CTkButton(bottom_frame, text="▶ 开启识别", command=lambda: processor.toggle_detection(), font=ctk.CTkFont(size=15, weight="bold"), fg_color=COLOR_PRIMARY, text_color="white", hover_color=COLOR_PRIMARY_HOVER, height=45)
+    start_btn = ctk.CTkButton(bottom_frame, text="Start Detection", command=lambda: processor.toggle_detection(), font=ctk.CTkFont(size=15, weight="bold"), fg_color=COLOR_PRIMARY, text_color="white", hover_color=COLOR_PRIMARY_HOVER, height=45)
     start_btn.pack(side="left", expand=True, fill="x", padx=(0, 10))
     
     def on_stop_click():
         if processor.is_detecting:
             processor.toggle_detection()
-            start_btn.configure(fg_color=COLOR_PRIMARY, text="▶ 开启识别", state="normal")
+            start_btn.configure(fg_color=COLOR_PRIMARY, text="Start Detection", state="normal")
             
     stop_btn = ctk.CTkButton(bottom_frame, text="⏹", command=on_stop_click, width=45, height=45, fg_color=COLOR_DANGER, hover_color="#B91C1C", text_color="white", font=ctk.CTkFont(size=18))
     stop_btn.pack(side="right")
 
-    # --------------------- 右侧容器 ---------------------
+    # --------------------- Right-side container ---------------------
     right_container = ctk.CTkFrame(root, fg_color="transparent")
     right_container.grid(row=0, column=1, sticky="nsew", padx=30, pady=30)
     right_container.grid_rowconfigure(0, weight=1); right_container.grid_columnconfigure(0, weight=1)
@@ -1110,10 +1110,10 @@ def create_gui():
         lbl.pack(anchor="w", padx=20, pady=(0, 15))
         return lbl
     
-    deer_id_label = mk_card(0, "焦点林麝 ID", deer_id)
-    mk_card(1, "环境温度", f"{temperature} °C")
-    mk_card(2, "相对湿度", f"{humidity} %")
-    mk_card(3, "AI 健康裁定", health_info, hl=True)
+    deer_id_label = mk_card(0, "Target Deer ID", deer_id)
+    mk_card(1, "Temperature", f"{temperature} °C")
+    mk_card(2, "Relative Humidity", f"{humidity} %")
+    mk_card(3, "AI Health Status", health_info, hl=True)
 
     content_frame = ctk.CTkFrame(realtime_view, fg_color="transparent")
     content_frame.pack(fill="both", expand=True)
@@ -1123,7 +1123,7 @@ def create_gui():
     vc = ctk.CTkFrame(content_frame, corner_radius=15, fg_color=COLOR_PANEL, border_width=1, border_color=COLOR_BORDER)
     vc.grid(row=0, column=0, sticky="nsew", padx=(0, 15))
     vc.grid_rowconfigure(0, weight=1); vc.grid_columnconfigure(0, weight=1)
-    # 为视频控制面板预留第1行
+    # Reserve row 1 for video playback controls
     vc.grid_rowconfigure(1, weight=0)
     
     placeholder_frame = ctk.CTkFrame(vc, fg_color="transparent")
@@ -1131,11 +1131,11 @@ def create_gui():
     
     pf_inner = ctk.CTkFrame(placeholder_frame, fg_color="transparent")
     pf_inner.pack(expand=True)
-    ctk.CTkLabel(pf_inner, text="等待视频源接入 ···", font=ctk.CTkFont(size=30, weight="bold"), text_color=COLOR_TEXT_SUB).pack(pady=(10, 10))
-    ctk.CTkLabel(pf_inner, text="生态引擎已就绪 | 请在左侧控制台载入模型与画面流", font=ctk.CTkFont(size=14), text_color="#4B5563").pack()
+    ctk.CTkLabel(pf_inner, text="Waiting for video source...", font=ctk.CTkFont(size=30, weight="bold"), text_color=COLOR_TEXT_SUB).pack(pady=(10, 10))
+    ctk.CTkLabel(pf_inner, text="Engine ready | Load a model and connect a video source from the left panel", font=ctk.CTkFont(size=14), text_color="#4B5563").pack()
 
     video_label = ctk.CTkLabel(vc, text="")
-    tag_label = ctk.CTkLabel(vc, text=" REC  CAM-01 繁育舍 ", font=ctk.CTkFont(size=10, weight="bold"), text_color="black", fg_color="white", corner_radius=4)
+    tag_label = ctk.CTkLabel(vc, text=" REC  CAM-01 BREEDING ROOM ", font=ctk.CTkFont(size=10, weight="bold"), text_color="black", fg_color="white", corner_radius=4)
     tag_label.grid(row=0, column=0, sticky="nw", padx=20, pady=20)
     
     fps_label = ctk.CTkLabel(vc, text="FPS: 0", font=ctk.CTkFont(size=10, weight="bold"), text_color="white", fg_color=COLOR_BG_SIDEBAR, corner_radius=4)
@@ -1154,18 +1154,18 @@ def create_gui():
         
     root.show_placeholder_fn = show_placeholder
 
-    processor = VideoProcessor(root, video_id="主控区")
+    processor = VideoProcessor(root, video_id="Main Console")
     processor.deer_id = deer_id 
     processor.video_label = video_label
     processor.fps_label = fps_label
 
-    # ====== 主控区 视频播放与进度控制面板 ======
+    # ====== Main-console video playback and progress controls ======
     control_panel = ctk.CTkFrame(vc, fg_color="transparent", height=45)
     
     progress_var = tk.DoubleVar(value=0)
     progress_slider = ctk.CTkSlider(control_panel, variable=progress_var, progress_color=COLOR_PRIMARY, button_color="white", button_hover_color=COLOR_TEXT_MAIN)
     progress_slider.pack(side="left", fill="x", expand=True, padx=(20, 10))
-    # UI层面事件绑定
+    # UI event bindings
     progress_slider.bind("<Button-1>", processor._on_slider_drag_start)
     progress_slider.bind("<ButtonRelease-1>", processor._on_slider_release)
     
@@ -1184,8 +1184,8 @@ def create_gui():
     
     action_box = ctk.CTkFrame(log_panel, fg_color=COLOR_PANEL, corner_radius=12, border_width=1, border_color=COLOR_BORDER)
     action_box.pack(fill="x", pady=(0, 15))
-    ctk.CTkLabel(action_box, text="当前焦点动作", font=ctk.CTkFont(size=12), text_color=COLOR_TEXT_SUB).pack(anchor="w", padx=20, pady=(15, 0))
-    action_label = ctk.CTkLabel(action_box, text="● 等待中", font=ctk.CTkFont(size=32, weight="bold"), text_color=COLOR_TEXT_SUB)
+    ctk.CTkLabel(action_box, text="Current Behavior", font=ctk.CTkFont(size=12), text_color=COLOR_TEXT_SUB).pack(anchor="w", padx=20, pady=(15, 0))
+    action_label = ctk.CTkLabel(action_box, text="Waiting", font=ctk.CTkFont(size=32, weight="bold"), text_color=COLOR_TEXT_SUB)
     action_label.pack(anchor="w", padx=20, pady=(5, 20))
     processor.action_label = action_label
     
@@ -1194,7 +1194,7 @@ def create_gui():
     
     lh = ctk.CTkFrame(log_list_box, fg_color="transparent")
     lh.pack(fill="x", padx=20, pady=15)
-    ctk.CTkLabel(lh, text="实时行为统计大纲", font=ctk.CTkFont(size=14, weight="bold"), text_color=COLOR_PRIMARY).pack(side="left")
+    ctk.CTkLabel(lh, text="Live Behavior Summary", font=ctk.CTkFont(size=14, weight="bold"), text_color=COLOR_PRIMARY).pack(side="left")
     
     sf_main = ctk.CTkScrollableFrame(log_list_box, fg_color="transparent")
     sf_main.pack(fill="both", expand=True, padx=10, pady=(0,10))
@@ -1205,7 +1205,7 @@ def create_gui():
             processor.toggle_detection()
             if processor.is_detecting: 
                 hide_placeholder()
-                start_btn.configure(fg_color="#064E3B", text="正在推断中...", state="disabled")
+                start_btn.configure(fg_color="#064E3B", text="Running inference...", state="disabled")
     
     start_btn.configure(command=custom_start_toggle)
 
@@ -1216,8 +1216,8 @@ def create_gui():
     
     title_frame = ctk.CTkFrame(top_bar, fg_color="transparent")
     title_frame.pack(side="left")
-    ctk.CTkLabel(title_frame, text="历史记录库", font=ctk.CTkFont(size=22, weight="bold"), text_color="white").pack(anchor="w")
-    ctk.CTkLabel(title_frame, text="检索与管理所有捕获的林麝行为分析任务", font=ctk.CTkFont(size=12), text_color=COLOR_TEXT_SUB).pack(anchor="w")
+    ctk.CTkLabel(title_frame, text="History Library", font=ctk.CTkFont(size=22, weight="bold"), text_color="white").pack(anchor="w")
+    ctk.CTkLabel(title_frame, text="Search and manage all recorded musk deer behavior analysis tasks", font=ctk.CTkFont(size=12), text_color=COLOR_TEXT_SUB).pack(anchor="w")
     
     def batch_delete_selected():
         to_delete_ids = []
@@ -1229,9 +1229,9 @@ def create_gui():
                 to_delete_paths.extend(data["paths"])
                 
         if not to_delete_ids:
-            return messagebox.showinfo("提示", "请先在列表中勾选需要删除的记录。")
+            return messagebox.showinfo("Notice", "Please select records to delete first.")
             
-        if not messagebox.askyesno("高危操作", f"确定彻底删除选中的 {len(to_delete_ids)} 条分析数据吗？\n相关的 Excel 文件将从硬盘永久移除，不可恢复！"):
+        if not messagebox.askyesno("Destructive Action", f"Permanently delete the selected {len(to_delete_ids)} analysis record(s)?\nRelated Excel files will be permanently removed from disk."):
             return
             
         with db_lock:
@@ -1260,18 +1260,18 @@ def create_gui():
     
     batch_action_bar = ctk.CTkFrame(search_frame, fg_color="transparent")
     batch_action_bar.pack(side="left", padx=(0, 20))
-    ctk.CTkCheckBox(batch_action_bar, text="全选", variable=select_all_var, command=toggle_select_all, width=60, font=ctk.CTkFont(size=12), text_color=COLOR_TEXT_MAIN).pack(side="left", padx=5)
-    ctk.CTkButton(batch_action_bar, text="批量删除", command=batch_delete_selected, width=70, height=32, fg_color="transparent", border_width=1, border_color=COLOR_DANGER, text_color=COLOR_DANGER, hover_color="#3F1616", font=ctk.CTkFont(size=12)).pack(side="left", padx=5)
+    ctk.CTkCheckBox(batch_action_bar, text="Select All", variable=select_all_var, command=toggle_select_all, width=60, font=ctk.CTkFont(size=12), text_color=COLOR_TEXT_MAIN).pack(side="left", padx=5)
+    ctk.CTkButton(batch_action_bar, text="Batch Delete", command=batch_delete_selected, width=70, height=32, fg_color="transparent", border_width=1, border_color=COLOR_DANGER, text_color=COLOR_DANGER, hover_color="#3F1616", font=ctk.CTkFont(size=12)).pack(side="left", padx=5)
 
-    search_status_var = tk.StringVar(value="异常状态 (全部)")
-    status_combo = ctk.CTkComboBox(search_frame, variable=search_status_var, values=["异常状态 (全部)", "✔️ 正常", "⚠️ 异常"], width=130, height=36, fg_color=COLOR_PANEL, border_color=COLOR_BORDER, font=ctk.CTkFont(size=12))
+    search_status_var = tk.StringVar(value="Alert status (all)")
+    status_combo = ctk.CTkComboBox(search_frame, variable=search_status_var, values=["Alert status (all)", "✔ Normal", "⚠ Alert"], width=130, height=36, fg_color=COLOR_PANEL, border_color=COLOR_BORDER, font=ctk.CTkFont(size=12))
     status_combo.pack(side="left", padx=5)
 
     search_id_var = tk.StringVar()
-    search_entry = ctk.CTkEntry(search_frame, textvariable=search_id_var, placeholder_text="🔍 输入林麝 ID 或 流水号...", width=200, height=36, fg_color=COLOR_PANEL, border_color=COLOR_BORDER, font=ctk.CTkFont(size=12))
+    search_entry = ctk.CTkEntry(search_frame, textvariable=search_id_var, placeholder_text="Search deer ID or job ID...", width=200, height=36, fg_color=COLOR_PANEL, border_color=COLOR_BORDER, font=ctk.CTkFont(size=12))
     search_entry.pack(side="left", padx=(5, 10))
 
-    ctk.CTkButton(search_frame, text="检索", command=lambda: load_history_data(), width=60, height=36, fg_color="#1E2923", hover_color=COLOR_BORDER).pack(side="left")
+    ctk.CTkButton(search_frame, text="Search", command=lambda: load_history_data(), width=60, height=36, fg_color="#1E2923", hover_color=COLOR_BORDER).pack(side="left")
 
     table_container = ctk.CTkFrame(history_view, fg_color=COLOR_PANEL, corner_radius=12, border_width=1, border_color=COLOR_BORDER)
     table_container.pack(fill="both", expand=True)
@@ -1281,13 +1281,13 @@ def create_gui():
     th.pack_propagate(False)
     h_font = ctk.CTkFont(size=12, weight="bold")
     
-    ctk.CTkLabel(th, text="选择", width=40, anchor="center", text_color=COLOR_TEXT_SUB, font=h_font).pack(side="left", padx=(10, 0))
-    ctk.CTkLabel(th, text="任务流水号", width=150, anchor="center", text_color=COLOR_TEXT_SUB, font=h_font).pack(side="left", padx=10)
-    ctk.CTkLabel(th, text="林麝编号", width=100, anchor="center", text_color=COLOR_TEXT_SUB, font=h_font).pack(side="left", padx=10)
-    ctk.CTkLabel(th, text="采集日期", width=120, anchor="center", text_color=COLOR_TEXT_SUB, font=h_font).pack(side="left", padx=10)
-    ctk.CTkLabel(th, text="监控时段", width=160, anchor="center", text_color=COLOR_TEXT_SUB, font=h_font).pack(side="left", padx=10)
-    ctk.CTkLabel(th, text="异常状态", width=100, anchor="center", text_color=COLOR_TEXT_SUB, font=h_font).pack(side="left", padx=10)
-    ctk.CTkLabel(th, text="操作", anchor="center", text_color=COLOR_TEXT_SUB, font=h_font).pack(side="right", padx=60)
+    ctk.CTkLabel(th, text="Select", width=40, anchor="center", text_color=COLOR_TEXT_SUB, font=h_font).pack(side="left", padx=(10, 0))
+    ctk.CTkLabel(th, text="Job ID", width=150, anchor="center", text_color=COLOR_TEXT_SUB, font=h_font).pack(side="left", padx=10)
+    ctk.CTkLabel(th, text="Deer ID", width=100, anchor="center", text_color=COLOR_TEXT_SUB, font=h_font).pack(side="left", padx=10)
+    ctk.CTkLabel(th, text="Date", width=120, anchor="center", text_color=COLOR_TEXT_SUB, font=h_font).pack(side="left", padx=10)
+    ctk.CTkLabel(th, text="Time Window", width=160, anchor="center", text_color=COLOR_TEXT_SUB, font=h_font).pack(side="left", padx=10)
+    ctk.CTkLabel(th, text="Alert Status", width=100, anchor="center", text_color=COLOR_TEXT_SUB, font=h_font).pack(side="left", padx=10)
+    ctk.CTkLabel(th, text="Actions", anchor="center", text_color=COLOR_TEXT_SUB, font=h_font).pack(side="right", padx=60)
 
     ctk.CTkFrame(table_container, height=1, fg_color=COLOR_BORDER).pack(fill="x", padx=10)
 
@@ -1295,12 +1295,12 @@ def create_gui():
     hist_scroll.pack(fill="both", expand=True, padx=5, pady=5)
 
     def view_interactive_charts(excel_path, task_id):
-        if not excel_path or not os.path.exists(excel_path): return messagebox.showerror("错误", "找不到原始数据。")
+        if not excel_path or not os.path.exists(excel_path): return messagebox.showerror("Error", "Raw data file was not found.")
         df = pd.read_excel(excel_path)
-        if df.empty: return messagebox.showinfo("提示", "无行为数据。")
+        if df.empty: return messagebox.showinfo("Notice", "No behavior data is available.")
         
         win = ctk.CTkToplevel(root)
-        win.title("行为多维可视化看板")
+        win.title("Behavior Analytics Dashboard")
         win.geometry("1100x750")
         win.configure(fg_color=COLOR_BG_MAIN)
         set_window_icon(win)
@@ -1308,13 +1308,13 @@ def create_gui():
 
         hdr = ctk.CTkFrame(win, fg_color="transparent", height=60)
         hdr.pack(fill="x", padx=30, pady=(20, 10))
-        ctk.CTkLabel(hdr, text="行为多维可视化看板", font=ctk.CTkFont(size=24, weight="bold"), text_color="white").pack(anchor="w")
-        ctk.CTkLabel(hdr, text=f"任务编号: {task_id} | 分析类型: 算法辅助查验", font=ctk.CTkFont(size=12), text_color=COLOR_TEXT_SUB).pack(anchor="w")
+        ctk.CTkLabel(hdr, text="Behavior Analytics Dashboard", font=ctk.CTkFont(size=24, weight="bold"), text_color="white").pack(anchor="w")
+        ctk.CTkLabel(hdr, text=f"Job ID: {task_id} | Analysis type: AI-assisted review", font=ctk.CTkFont(size=12), text_color=COLOR_TEXT_SUB).pack(anchor="w")
         
         scr = ctk.CTkScrollableFrame(win, fg_color="transparent")
         scr.pack(fill="both", expand=True, padx=20, pady=10)
         
-        actions, durations, start_times, end_times = df['动物行为'].tolist(), df['时长(秒)'].tolist(), df['开始时间'].tolist(), df['结束时间'].tolist()
+        actions, durations, start_times, end_times = df['Behavior'].tolist(), df['Duration (s)'].tolist(), df['Start Time'].tolist(), df['End Time'].tolist()
         unique_acts = list(set(actions))
         colors = ['#10B981', '#F59E0B', '#3B82F6', '#8B5CF6', '#EC4899', '#F43F5E', '#64748B']
         cmap = dict(zip(unique_acts, [colors[i % len(colors)] for i in range(len(unique_acts))]))
@@ -1344,7 +1344,7 @@ def create_gui():
                 for i, bar in enumerate(bars):
                     if bar.contains(event)[0]:
                         annot.xy = (event.xdata, event.ydata)
-                        annot.set_text(f"行为: {actions[i]}\n持续: {durations[i]:.1f} 秒\n起于: {start_times[i]}\n止于: {end_times[i]}")
+                        annot.set_text(f"Behavior: {actions[i]}\nDuration: {durations[i]:.1f} s\nStart: {start_times[i]}\nEnd: {end_times[i]}")
                         annot.set_visible(True)
                         fig1.canvas.draw_idle()
                         return
@@ -1354,7 +1354,7 @@ def create_gui():
         
         c1_frame = ctk.CTkFrame(scr, fg_color=COLOR_PANEL, corner_radius=12)
         c1_frame.pack(fill="x", pady=10)
-        ctk.CTkLabel(c1_frame, text="行为时间甘特图", font=ctk.CTkFont(weight="bold"), text_color="white").pack(anchor="w", padx=20, pady=(15,0))
+        ctk.CTkLabel(c1_frame, text="Behavior Timeline", font=ctk.CTkFont(weight="bold"), text_color="white").pack(anchor="w", padx=20, pady=(15,0))
         canvas1 = FigureCanvasTkAgg(fig1, master=c1_frame); canvas1.draw(); canvas1.get_tk_widget().pack(pady=(0,15), fill="x", padx=15)
 
         bottom_charts = ctk.CTkFrame(scr, fg_color="transparent")
@@ -1363,18 +1363,18 @@ def create_gui():
         
         c2_frame = ctk.CTkFrame(bottom_charts, fg_color=COLOR_PANEL, corner_radius=12)
         c2_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
-        ctk.CTkLabel(c2_frame, text="行为频次触发统计", font=ctk.CTkFont(weight="bold"), text_color="white").pack(anchor="w", padx=20, pady=(15,0))
+        ctk.CTkLabel(c2_frame, text="Behavior Frequency", font=ctk.CTkFont(weight="bold"), text_color="white").pack(anchor="w", padx=20, pady=(15,0))
         fig2, ax2 = plt.subplots(figsize=(5, 3))
-        action_counts = df['动物行为'].value_counts()
+        action_counts = df['Behavior'].value_counts()
         ax2.bar(action_counts.index, action_counts.values, color=[cmap[n] for n in action_counts.index], width=0.4)
         ax2.tick_params(axis='x', rotation=0, colors=COLOR_TEXT_SUB); ax2.spines['top'].set_visible(False); ax2.spines['right'].set_visible(False)
         canvas2 = FigureCanvasTkAgg(fig2, master=c2_frame); canvas2.draw(); canvas2.get_tk_widget().pack(pady=(0,15), fill="x", padx=15)
         
         c3_frame = ctk.CTkFrame(bottom_charts, fg_color=COLOR_PANEL, corner_radius=12)
         c3_frame.grid(row=0, column=1, sticky="nsew", padx=(10, 0))
-        ctk.CTkLabel(c3_frame, text="时间占比双标签", font=ctk.CTkFont(weight="bold"), text_color="white").pack(anchor="w", padx=20, pady=(15,0))
+        ctk.CTkLabel(c3_frame, text="Time Share", font=ctk.CTkFont(weight="bold"), text_color="white").pack(anchor="w", padx=20, pady=(15,0))
         fig3, ax3 = plt.subplots(figsize=(5, 3))
-        time_totals = df.groupby('动物行为')['时长(秒)'].sum()
+        time_totals = df.groupby('Behavior')['Duration (s)'].sum()
         ax3.pie(time_totals.values, labels=time_totals.index, colors=[cmap[n] for n in time_totals.index], autopct='%1.1f%%', textprops={'fontsize':9, 'color':'white'}, wedgeprops={'width':0.4, 'edgecolor':COLOR_PANEL})
         canvas3 = FigureCanvasTkAgg(fig3, master=c3_frame); canvas3.draw(); canvas3.get_tk_widget().pack(pady=(0,15), fill="x", padx=15)
 
@@ -1383,10 +1383,10 @@ def create_gui():
     def open_excel(path):
         if path and os.path.exists(path):
             try: os.startfile(path)
-            except: messagebox.showerror("错误", "无法打开文件。")
+            except: messagebox.showerror("Error", "Unable to open the file.")
 
     def delete_record(r_id, paths):
-        if not messagebox.askyesno("高危操作", "确定彻底删除该次分析数据？文件将从硬盘永久移除！"): return
+        if not messagebox.askyesno("Destructive Action", "Permanently delete this analysis record? Files will be removed from disk."): return
         with db_lock:
             conn = sqlite3.connect('history.db'); c = conn.cursor()
             c.execute("DELETE FROM analysis_records WHERE id=?", (r_id,))
@@ -1411,8 +1411,8 @@ def create_gui():
         if s_id: 
             query += " AND (task_id LIKE ? OR deer_id LIKE ?)"
             params.extend([f"%{s_id}%", f"%{s_id}%"])
-        if s_status == "⚠️ 异常": query += " AND has_alert = 1"
-        elif s_status == "✔️ 正常": query += " AND has_alert = 0"
+        if s_status == "⚠ Alert": query += " AND has_alert = 1"
+        elif s_status == "✔ Normal": query += " AND has_alert = 0"
         query += " ORDER BY id DESC"
         
         with db_lock:
@@ -1420,13 +1420,13 @@ def create_gui():
             c.execute(query, params); records = c.fetchall(); conn.close()
         
         if not records:
-            ctk.CTkLabel(hist_scroll, text="没有找到相关数据记录", text_color=COLOR_TEXT_SUB).pack(pady=50)
+            ctk.CTkLabel(hist_scroll, text="No matching records found", text_color=COLOR_TEXT_SUB).pack(pady=50)
             return
 
         for i, r in enumerate(records):
             r_id, task_id, deer_id_rec, st_t, end_t, has_alert, ex_raw, ex_al, _, _, _ = r
             
-            if st_t.endswith("录像重放"): date_str, time_str = st_t.split(" ")[0], "离线分析/回放流水"
+            if st_t.endswith("Replay"): date_str, time_str = st_t.split(" ")[0], "Offline analysis/replay"
             else:
                 try: date_str, time_str = st_t.split(" ")[0], f"{st_t.split(' ')[1][:5]} - {end_t.split(' ')[1][:5]}"
                 except: date_str, time_str = st_t, end_t
@@ -1451,19 +1451,19 @@ def create_gui():
             ctk.CTkLabel(row, text=time_str, width=160, font=ctk.CTkFont(size=12), text_color=COLOR_TEXT_SUB).pack(side="left", padx=10)
             
             status_color = COLOR_DANGER if has_alert else COLOR_PRIMARY
-            status_text = "● 异常" if has_alert else "● 正常"
+            status_text = "● Alert" if has_alert else "● Normal"
             ctk.CTkLabel(row, text=status_text, width=100, text_color=status_color, font=ctk.CTkFont(size=12, weight="bold")).pack(side="left", padx=10)
             
             f_action = ctk.CTkFrame(row, fg_color="transparent")
             f_action.pack(side="right", padx=10)
             
-            ctk.CTkButton(f_action, text="看板", width=50, height=28, fg_color="#1E2923", hover_color=COLOR_BORDER, text_color=COLOR_TEXT_MAIN, font=ctk.CTkFont(size=12), command=lambda e=ex_raw, t=task_id: view_interactive_charts(e, t)).pack(side="left", padx=3)
-            ctk.CTkButton(f_action, text="记录流水", width=65, height=28, fg_color="transparent", border_width=1, border_color=COLOR_BORDER, text_color=COLOR_TEXT_MAIN, font=ctk.CTkFont(size=12), command=lambda e=ex_raw: open_excel(e)).pack(side="left", padx=3)
+            ctk.CTkButton(f_action, text="Dashboard", width=50, height=28, fg_color="#1E2923", hover_color=COLOR_BORDER, text_color=COLOR_TEXT_MAIN, font=ctk.CTkFont(size=12), command=lambda e=ex_raw, t=task_id: view_interactive_charts(e, t)).pack(side="left", padx=3)
+            ctk.CTkButton(f_action, text="Records", width=65, height=28, fg_color="transparent", border_width=1, border_color=COLOR_BORDER, text_color=COLOR_TEXT_MAIN, font=ctk.CTkFont(size=12), command=lambda e=ex_raw: open_excel(e)).pack(side="left", padx=3)
             
             if has_alert and ex_al:
-                ctk.CTkButton(f_action, text="标记单", width=55, height=28, fg_color="transparent", border_width=1, border_color=COLOR_BORDER, text_color=COLOR_DANGER, font=ctk.CTkFont(size=12), command=lambda e=ex_al: open_excel(e)).pack(side="left", padx=3)
+                ctk.CTkButton(f_action, text="Alert Sheet", width=55, height=28, fg_color="transparent", border_width=1, border_color=COLOR_BORDER, text_color=COLOR_DANGER, font=ctk.CTkFont(size=12), command=lambda e=ex_al: open_excel(e)).pack(side="left", padx=3)
             
-            ctk.CTkButton(f_action, text="删除", width=40, height=28, fg_color="transparent", border_width=1, border_color=COLOR_DANGER, text_color=COLOR_DANGER, font=ctk.CTkFont(size=12), command=lambda i=r_id, paths=[ex_raw, ex_al]: delete_record(i, paths)).pack(side="left", padx=3)
+            ctk.CTkButton(f_action, text="Delete", width=40, height=28, fg_color="transparent", border_width=1, border_color=COLOR_DANGER, text_color=COLOR_DANGER, font=ctk.CTkFont(size=12), command=lambda i=r_id, paths=[ex_raw, ex_al]: delete_record(i, paths)).pack(side="left", padx=3)
 
     root.refresh_history_fn = load_history_data
     switch_tab("realtime")
