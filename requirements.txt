@@ -1,3 +1,8 @@
+# Install the PyTorch build matching your GPU driver/CUDA version separately.
+# Example for CUDA 12.8:
+# python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+
+customtkinter>=5.2.0
 ultralytics>=8.0.0
 opencv-python>=4.7.0
 Pillow>=9.5.0
