@@ -126,8 +126,8 @@ Benchmark results are saved under `UI_result/benchmarks/`.
 
 ## Demonstration Videos
 
-- `demo/system_full_feature_demo.mp4` demonstrates the complete system workflow and major functions.
-- `demo/system_demo_2026-07-13.mp4` demonstrates multi-threaded detection and data-recording behavior.
+- [Watch the complete system workflow demo](https://github.com/17qingxinflower/MDM/raw/main/demo/system_full_feature_demo.mp4) (`demo/system_full_feature_demo.mp4`) demonstrates the complete system workflow and major functions.
+- [Watch the multi-threaded detection and data-recording demo](https://github.com/17qingxinflower/MDM/raw/main/demo/system_demo_2026-07-13.mp4) (`demo/system_demo_2026-07-13.mp4`) demonstrates multi-threaded detection and data-recording behavior.
 
 These videos are included for SoftwareX reviewers who want a quick visual confirmation of the workflow before running the application locally.
 
