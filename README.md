@@ -1,159 +1,143 @@
-# MuskDeerMonitor
+# MuskDeer Monitor
 
-MuskDeerMonitor is a desktop application for automated Forest Musk Deer
-(*Moschus berezovskii*) behavior monitoring. This repository is the minimal
-runnable package prepared for GitHub and SoftwareX review: the GUI program, one
-trained YOLO model, and two test videos.
+MuskDeer Monitor is a PySide6 desktop application for automatic musk deer behavior detection, monitoring, alerting, and result export. It uses a YOLO model to identify four behavior classes in enclosure video: `Egestion`, `Feeding`, `Stand/Walk`, and `Lie Down`.
 
-This release follows the March 16, 2026 realtime acceleration and seek-control
-snapshot selected by the maintainers. It uses `customtkinter`, OpenCV,
-Ultralytics YOLO, SQLite, pandas, and matplotlib. Training scripts, experimental
-notebooks, intermediate datasets, generated outputs, and later UI-modernization
-branches are intentionally not included in this minimal repository.
+This repository is a minimized SoftwareX review package. It contains the runnable application code, one PyTorch detection model, one bundled test video for reviewer reproduction, and one short system demonstration video. Build folders, packaged executables, cached wheels, local databases, generated outputs, and TensorRT/ONNX exports are intentionally excluded to keep the repository small and reproducible.
 
-## SoftwareX Metadata
+## Software Metadata
 
-| Item | Value |
+| Item | Description |
 | --- | --- |
-| Current code version | `2026-03-16-realtime-minimal` |
-| Repository | <https://github.com/17qingxinflower/MDM> |
+| Software name | MuskDeer Monitor |
+| Current version | 0.1.0 PySide6 minimal review package |
+| Programming language | Python 3.11+ |
+| Main interface | PySide6 desktop GUI |
+| Core ML dependency | Ultralytics YOLO |
+| Database | SQLite by default; PostgreSQL can be configured for managed deployments |
 | License | MIT, see `LICENSE.md` |
-| Version control | Git / GitHub |
-| Language | Python |
-| Main dependencies | customtkinter, OpenCV, Pillow, Ultralytics YOLO, pandas, openpyxl, matplotlib |
-| Main program | `main.py` |
-| Included model | `weight/Demo.pt` |
-| Included test videos | `video/ch01_20160707002310.mp4`, `video/ch01_20160708011933.mp4` |
-| Runtime outputs | `UI_result/`, `history.db` |
+| Operating system tested | Windows 11 |
+| Repository contents | Source code, runtime requirements, YOLO `.pt` model, bundled test video, demo video |
 
-## Included Files
+## Repository Layout
 
 ```text
-main.py                         # Desktop GUI application
-weight/Demo.pt                  # YOLO behavior detection model
-video/ch01_20160707002310.mp4   # Test video 1
-video/ch01_20160708011933.mp4   # Test video 2
-requirements.txt                # Python runtime dependencies
-LICENSE.md                      # MIT license
-README.md                       # User and reviewer documentation
+deerui/                  Application source code
+scripts/                 Benchmark and diagnostic scripts
+weights/best.pt          Bundled YOLO behavior-detection model
+benchmark_assets/        Reviewer test video used by smoke/benchmark commands
+demo/                    Short system demonstration video
+requirements.txt         Runtime Python dependencies
+pyproject.toml           Project metadata
+.env.example             Optional runtime configuration template
+LICENSE.md               MIT license
 ```
 
-## Behavior Classes
+The following large or local-only artifacts are excluded: `dist/`, `build/`, `UI_result/`, `offline_wheels/`, `deployment/`, `packaging/`, local databases, cache folders, TensorRT `.engine` files, ONNX exports, and test/development notes.
 
-The included model and code use seven Forest Musk Deer behavior labels:
+## Hardware And Software Requirements
 
-| Model label | English display |
-| --- | --- |
-| `hunt` | Foraging |
-| `egestion` | Excretion |
-| `Standing_feeding` | Standing Feeding |
-| `Stand_or_walk` | Walking |
-| `Lie_down_and_rest` | Resting |
-| `Licking_the_pussy` | Anogenital Licking |
-| `Comb_and_lick` | Grooming |
+- Windows 10/11 or a Linux system with GUI support.
+- Python 3.11 or newer.
+- Conda or Miniconda for environment management.
+- CPU execution is supported for functional review.
+- NVIDIA GPU plus a matching PyTorch CUDA build is recommended for real-time detection.
+- A local camera, RTSP stream, or video file can be used as an input source.
 
-## Features
+## Conda Installation
 
-- English desktop GUI for reviewer-facing and user-facing operation.
-- Real-time single-camera or video-file behavior detection.
-- Video progress control with seeking and playback-speed adjustment.
-- Frame-queue based processing for smoother real-time operation.
-- Multi-view monitoring wall for several camera or video sources.
-- Offline historical-video batch analysis.
-- Behavior duration and frequency recording.
-- Deer ID management and task-history browsing with SQLite.
-- Expert threshold settings for abnormal-behavior review.
-- Excel export for raw behavior streams and abnormal-review records.
-- Interactive behavior charts for timeline, frequency, and proportion review.
-
-## Installation
-
-Use Python 3.10 or 3.11. Windows is recommended because the current desktop
-workflow uses Tkinter file dialogs and Windows-style local file opening.
-
-With conda:
+Create a clean Conda environment. The environment name below is only a suggestion for reviewers; it does not assume that an existing `yolov8n` environment is present.
 
 ```powershell
 git clone https://github.com/17qingxinflower/MDM.git
 cd MDM
 
-conda create -n mdm python=3.11 -y
-conda activate mdm
+conda create -n muskdeer-monitor python=3.11 -y
+conda activate muskdeer-monitor
 
 python -m pip install --upgrade pip setuptools wheel
+```
+
+Install PyTorch first. For NVIDIA GPUs with CUDA 12.8:
+
+```powershell
 python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+```
+
+For CPU-only review:
+
+```powershell
+python -m pip install torch torchvision torchaudio
+```
+
+Then install the remaining application dependencies:
+
+```powershell
 python -m pip install -r requirements.txt
 ```
 
-With `venv`:
+## Configuration
+
+The application works without editing configuration files. By default it uses:
+
+- model: `weights/best.pt`
+- database: `sqlite+pysqlite:///./deerui_dev.db`
+- output directory: `UI_result/`
+- benchmark video: `benchmark_assets/053358f40cf7b5cfe5d8620a94d621b9.mp4`
+
+To override settings, copy `.env.example` to `deerui.env` and edit the values:
 
 ```powershell
-py -3.11 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip setuptools wheel
-python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
-python -m pip install -r requirements.txt
+Copy-Item .env.example deerui.env
 ```
 
-If your GPU, driver, or CUDA version is different, install the PyTorch command
-recommended by the official PyTorch selector instead of the CUDA 12.8 example
-above. CPU-only PyTorch can also run the test videos, but inference will be
-slower.
+For managed installations, `DEERUI_DATABASE_URL` can be changed to a PostgreSQL connection string.
 
-## Run
+## Quick Verification
+
+Run a smoke test to validate imports and configuration:
 
 ```powershell
-python main.py
+python -m deerui.app --smoke-test
 ```
 
-In the GUI:
-
-1. Click `Load AI Model` and select `weight/Demo.pt`.
-2. Click `Connect Video Source`.
-3. Select a deer ID, then choose `Yes` for local video.
-4. Select either `video/ch01_20160707002310.mp4` or
-   `video/ch01_20160708011933.mp4`.
-5. Click `Start Detection`.
-6. Use the progress and speed controls for seeking and accelerated playback.
-7. Use `Behavior Alert Settings` to tune abnormal-behavior review thresholds.
-
-For offline processing, click `Video Batch` and select a video file.
-
-## Outputs
-
-Runtime outputs are generated in the working directory:
-
-```text
-UI_result/YYYYMMDD/
-history.db
-```
-
-Typical generated files include behavior-record Excel files, abnormal-review
-Excel files, timeline charts, frequency charts, and proportion charts. These
-runtime outputs are ignored by Git and are not committed to the repository.
-
-## Validation
-
-The selected source file can be checked with:
+Initialize the local SQLite database:
 
 ```powershell
-python -m py_compile main.py
+python -m deerui.app --init-db
 ```
 
-The program is GUI-based, so full functional validation requires launching
-`python main.py`, loading `weight/Demo.pt`, and selecting one of the included
-test videos.
+Start the GUI:
 
-## Citation
-
-Before the SoftwareX paper receives a DOI, cite the repository and code version:
-
-```bibtex
-@software{muskdeermonitor_realtime_2026,
-  title = {MuskDeerMonitor: A desktop system for automated Forest Musk Deer behavior monitoring},
-  author = {{MuskDeerMonitor contributors}},
-  year = {2026},
-  version = {2026-03-16-realtime-minimal},
-  url = {https://github.com/17qingxinflower/MDM}
-}
+```powershell
+python -m deerui.app
 ```
+
+In the GUI, load `weights/best.pt`, select the bundled test video from `benchmark_assets/`, assign a deer ID such as `2.1.6`, and start detection. Results are written under `UI_result/`.
+
+## Optional Benchmark
+
+The packaged benchmark command can exercise multiple input streams against the bundled test video. For a short reviewer check:
+
+```powershell
+python -m deerui.app --capacity-benchmark --benchmark-streams 1 --benchmark-duration 5
+```
+
+Benchmark results are saved under `UI_result/benchmarks/`.
+
+## Demonstration Video
+
+The file `demo/system_demo_2026-07-13.mp4` is a short demonstration recording of the system interface. It is included for SoftwareX reviewers who want a quick visual confirmation of the workflow before running the application locally.
+
+## Main Functions
+
+- Real-time or video-file behavior detection with YOLO.
+- Multi-camera monitoring matrix with shared inference workers.
+- Batch processing for historical videos.
+- Deer profile registration and task history management.
+- Alert rules for long behavior duration and high-frequency behavior transitions.
+- Export of raw behavior records and alert records.
+- Behavior timeline, frequency, and time-share visualizations.
+
+## Notes For Reviewers
+
+This repository is intentionally smaller than the development workspace. The excluded packaging outputs can be regenerated from the source code and requirements, while the included `.pt` model and test video are sufficient to verify the main detection workflow.

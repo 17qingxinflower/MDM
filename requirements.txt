@@ -1,12 +1,15 @@
-# Install the PyTorch build matching your GPU driver/CUDA version separately.
-# Example for CUDA 12.8:
-# python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+# Runtime requirements for the minimal MuskDeerMonitor repository.
+# For GPU acceleration, install the PyTorch build that matches your CUDA/driver
+# before this file. Example for CUDA 12.8:
+#   python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+#   python -m pip install -r requirements.txt
 
-customtkinter>=5.2.0
-ultralytics>=8.0.0
-opencv-python>=4.7.0
-Pillow>=9.5.0
-pandas>=2.0.0
-numpy>=1.24.0
-openpyxl>=3.1.0
-matplotlib>=3.7.0
+PySide6>=6.7
+opencv-python>=4.8
+ultralytics>=8.0
+SQLAlchemy>=2.0
+alembic>=1.13
+psycopg[binary]>=3.1
+pandas>=2.0
+openpyxl>=3.1
+matplotlib>=3.7

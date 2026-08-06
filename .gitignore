@@ -1,17 +1,64 @@
+# Python
 __pycache__/
 *.py[cod]
-
+*.pyo
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.coverage
+htmlcov/
 
+# Virtual environments
 .venv/
 venv/
 env/
+.env
+deerui.env
 
+# Local runtime data
+deerui_dev.db
+*.db
+*.sqlite
+*.sqlite3
 UI_result/
-history.db
-*.log
+out/
+logs/
+smoke_threads.log
+%temp%/
 
+# Build and package outputs
+build/
+dist/
+*.spec.log
+*.egg-info/
+
+# Offline package caches and third-party installers
+offline_wheels/
+deployment/
+packaging/
+
+# Internal development notes and optional local-only checks
+docs/
+tests/
+.claude/
+CLAUDE.md
+*.cmd
+
+# Keep the GitHub package portable: publish the PyTorch model and regenerate
+# exported runtimes on the target machine when needed.
+weights/*.engine
+weights/*.onnx
+weights/*.plan
+!weights/best.pt
+
+# Keep exactly one bundled reviewer/demo video.
+benchmark_assets/*
+!benchmark_assets/053358f40cf7b5cfe5d8620a94d621b9.mp4
+demo/*
+!demo/system_demo_2026-07-13.mp4
+
+# IDE and OS files
+.idea/
+.vscode/
 .DS_Store
 Thumbs.db
