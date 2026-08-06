@@ -56,6 +56,7 @@ benchmark_assets/*
 !benchmark_assets/053358f40cf7b5cfe5d8620a94d621b9.mp4
 demo/*
 !demo/system_demo_2026-07-13.mp4
+!demo/system_full_feature_demo.mp4
 
 # IDE and OS files
 .idea/

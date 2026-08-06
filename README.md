@@ -25,7 +25,7 @@ deerui/                  Application source code
 scripts/                 Benchmark and diagnostic scripts
 weights/best.pt          Bundled YOLO behavior-detection model
 benchmark_assets/        Reviewer test video used by smoke/benchmark commands
-demo/                    Short system demonstration video
+demo/                    Short system demonstration videos
 requirements.txt         Runtime Python dependencies
 pyproject.toml           Project metadata
 .env.example             Optional runtime configuration template
@@ -124,9 +124,12 @@ python -m deerui.app --capacity-benchmark --benchmark-streams 1 --benchmark-dura
 
 Benchmark results are saved under `UI_result/benchmarks/`.
 
-## Demonstration Video
+## Demonstration Videos
 
-The file `demo/system_demo_2026-07-13.mp4` is a short demonstration recording of the system interface. It is included for SoftwareX reviewers who want a quick visual confirmation of the workflow before running the application locally.
+- `demo/system_full_feature_demo.mp4` demonstrates the complete system workflow and major functions.
+- `demo/system_demo_2026-07-13.mp4` demonstrates multi-threaded detection and data-recording behavior.
+
+These videos are included for SoftwareX reviewers who want a quick visual confirmation of the workflow before running the application locally.
 
 ## Main Functions
 
